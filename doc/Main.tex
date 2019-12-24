@@ -1,0 +1,119 @@
+\documentclass[a4paper, 11pt,UTF8,oneside]{article}
+\usepackage{ctex}
+\usepackage{multirow,tabularx}
+\usepackage{array,booktabs}
+\usepackage{amsmath,dsfont,amsfonts,bm,amsbsy}
+\usepackage[top=0.5in, bottom=0.5in, left=0.5in, right=0.5in]{geometry}
+%\usepackage{lstlisting} % Write codes.
+\usepackage[dvipsnames]{xcolor}
+\usepackage{enumerate}
+\usepackage{tikz}
+\usepackage{etoolbox}
+\usepackage{listings}
+\usepackage{mdframed}
+\usetikzlibrary{cd}
+\usetikzlibrary{graphs}
+\usetikzlibrary {positioning}
+\definecolor {processblue}{cmyk}{0.96,0,0,0}
+\usetikzlibrary{shapes.multipart}
+%\usetikzlibrary{graphdrawing}
+%\usegdlibrary{layered}
+%Differential operator.
+\newcommand*\dif{\mathop{}\!\mathrm{d}}
+%Circled number.
+\newcommand{\circled}[2][]{%
+  \tikz[baseline=(char.base)]{%
+    \node[shape = circle, draw, inner sep = 1pt]
+    (char) {\phantom{\ifblank{#1}{#2}{#1}}};%
+    \node at (char.center) {\makebox[0pt][c]{#2}};}}
+\robustify{\circled}
+
+\usepackage{titlesec,color,blindtext} % To use chapter.
+\definecolor{gray75}{gray}{0.75}
+\newcommand{\hsp}{\hspace{20pt}}
+\titleformat{\chapter}[hang]{\Huge\bfseries}{\thechapter\hsp\textcolor{gray75}{|}\hsp}{0pt}{\Huge\bfseries}
+
+%Highlight V2
+\usepackage{tcolorbox}
+\newtcbox{\entoure}[1][red]{on line,
+arc=3pt,colback=#1!10!white,colframe=#1!50!black,
+before upper={\rule[-3pt]{0pt}{10pt}},boxrule=1pt,
+boxsep=0pt,left=2pt,right=2pt,top=1pt,bottom=.5pt}
+
+\usepackage{color}   %May be necessary if you want to color links
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true, %set true if you want colored links
+    linktoc=all,     %set to all if you want both sections and subsections linked
+    linkcolor=blue,  %choose some color if you want links to stand out
+}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{multicol}
+\lstset{
+%numbers=left,
+%numberstyle=\small,
+%numbersep=8pt,
+%frame = single,
+language=C++,
+framexleftmargin=15pt,
+basicstyle=\ttfamily,
+commentstyle=\color{green}, % comment color
+keywordstyle=\color{blue}, % keyword color
+stringstyle=\color{red} % string color
+}
+\newcommand{\cd}[1]{\texttt{#1}}
+\usepackage{hyphenat}
+
+
+\begin{document}
+\title{tusharecpp参考手册}
+\author{周瑶}
+\maketitle
+
+\section{安装}
+\paragraph{依赖项}依赖项主要是boost的几个库，如果已经安装了boost，可以直接使用。
+\begin{enumerate}
+  \item \cd{boost.beast}。C++网络库
+  \item \cd{boost.property\_tree}。用于处理JSON数据。
+  \item \cd{boost.tokenizer}。分割字符串。
+\end{enumerate}
+
+\cd{tusharecpp}是一个纯头文件的C++库，将文件夹内的"tusharecpp"文件夹整个复制到可以让编译器找到的地方就可以使用。接口与tushare的python接口基本一致。需要编译器支持C++17或以上，在VS中用时，需要使用\cd{$\backslash$std:c++latest}。
+
+\section{基本使用}
+详细的接口参考\href{https://tushare.pro/document/2}{tushare官网}。
+
+C++代码：
+
+\begin{tcolorbox}
+\begin{lstlisting}
+#include <iostream>
+#include "../../../tusharecpp/tusharecpp.hpp"
+using namespace std;
+
+int main()
+{
+    auto pro = ts::pro_api("xxxxxxxxxxxxxxxxxxxxxxx");
+    auto data=pro.stock_basic("","","");
+	cout << "Begin write;" << endl;
+    data.to_csv("data.csv");
+    std::cout << "Hello World!\n";
+}
+\end{lstlisting}
+\end{tcolorbox}
+
+其中\cd{pro\_api}需要替换成自己的token，这个token要从tushare取得。
+
+\section{设计原理}
+\paragraph{代码结构}整个库只由两个文件构成：\cd{data\_container.hpp}和\cd{tusharecpp.hpp}。每个接口要接受特定的参数，参数名是直接从tushare网站上抓取，然后使用代码生成的方法产生的，见于\cd{code\_generate}文件夹内的nb文件，而模板文件是该文件夹内的\cd{tusharecpp.hpp}。
+
+模板文件内有\cd{\#\#\_AUTO\_GENERATED\_FIELDS\_MAP\_\#\#}、\cd{\#\#\_AUTO\_GENERATED\_TYPES\_MAP\_\#\#}、\cd{\#\#\_AUTO\_GENERATED\_API\_\#\#}几个串，它们会被替换掉。\cd{fields\_map}中存储的每个接口返回的fields，\cd{types\_map}存储的是返回的每个变量的类型。
+
+\paragraph{数据结构}\entoure{data\_container}是用来存储返回的数据的，内部用\cd{vector<void*>}存储每列的指针，在需要时再\cd{reinterpret\_cast}回去。因此支持的数据类型有限，目前有三种：\cd{int}、\cd{string}、\cd{double}。
+
+\section{API说明}
+这个库在写的时候没有考虑多线程，也不建议使用多线程，因为已经具有了爬虫的性质，如果给服务器的负载过大，可能有法律上的问题，再一个也影响其它人使用。
+
+
+\end{document} 
